@@ -159,6 +159,15 @@ Customize the path to Netlify CMS on your Gridsome site.
 Customize the value of the `title` tag in your CMS HTML (shows in the browser
 bar).
 
+### `shareWebpackRules`
+
+(_optional_, type: `boolean`, default: `false`)
+
+This plugin has its own Webpack configuration and server under the hood. 
+Setting `shareWebpackRules = true` uses the rules from your Gridsome project instead.
+This is useful for projects that want to use TypeScript or CSS preprocessors within
+their `netlify-cms` configuration.
+
 ### `enableIdentityWidget`
 
 (_optional_, type: `boolean`, default: `true`)
@@ -184,6 +193,7 @@ required):
         htmlPath: `src/cms/index.html`,
         publicPath: `/cms`,
         htmlTitle: `My CMS`,
+        shareWebpackRules: false,
         enableIdentityWidget: false
       }
     } 

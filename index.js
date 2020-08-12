@@ -6,8 +6,9 @@ const HtmlWebpackExcludeAssetsPlugin = require('html-webpack-exclude-assets-plug
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const WebpackDevMiddleware = require('webpack-dev-middleware')
+const { merge } = require('webpack-merge')
 
-function createWebpackConfig({context, outDir, options, isProd, pathPrefix}) {
+function createWebpackConfig({context, outDir, options, pathPrefix}) {
 
   const netlifyCMSPlugins = Array.isArray(options.plugins) ? options.plugins : []
 
@@ -22,7 +23,7 @@ function createWebpackConfig({context, outDir, options, isProd, pathPrefix}) {
    * Hash output filename in for `gridsome build`, but not for `gridsome develop`
    */
   let output = {
-    filename: isProd ? '[name].[contenthash:8].js' : '[name].js',
+    filename: '[name].[contenthash:8].js',
     publicPath: options.publicPath
   }
   if(outDir) { output.path = `${outDir}${options.publicPath}` }
@@ -34,7 +35,6 @@ function createWebpackConfig({context, outDir, options, isProd, pathPrefix}) {
    */
 
   return {
-    mode: isProd ? 'production' : 'development',
     entry: {
       cms: [path.resolve(context, options.modulePath)]
         .concat(netlifyCMSPlugins)
@@ -44,12 +44,12 @@ function createWebpackConfig({context, outDir, options, isProd, pathPrefix}) {
         .filter(p => p),
     },
     output,
-    resolve: {
-      modules: [path.resolve(__dirname, 'node_modules'), path.resolve(context, 'node_modules'), 'node_modules']
-    },
-    resolveLoader: {
-      modules: [path.resolve(__dirname, 'node_modules'), path.resolve(context, 'node_modules'), 'node_modules']
-    },
+    // resolve: {
+    //   modules: [path.resolve(__dirname, 'node_modules'), path.resolve(context, 'node_modules'), 'node_modules']
+    // },
+    // resolveLoader: {
+    //   modules: [path.resolve(__dirname, 'node_modules'), path.resolve(context, 'node_modules'), 'node_modules']
+    // },
     module: {
       rules: [
         {
@@ -119,19 +119,30 @@ module.exports = function (api, options) {
   const { context } = api
   const { pathPrefix } = api._app.config
 
+  let gridsomeWebpackConfig = {}
+  if (options.shareWebpackRules) {
+    api.configureWebpack(wpConfig => {
+      gridsomeWebpackConfig = merge({}, wpConfig)
+      delete gridsomeWebpackConfig.plugins
+      delete gridsomeWebpackConfig.entry
+      return wpConfig
+    })
+  }
+
   /**
    * For `gridsome build`
    */
   api.afterBuild(({config}) => {
     const { outDir } = config
 
-    const webpackConfig = createWebpackConfig({
+    let webpackConfig = createWebpackConfig({
       outDir,
       context,
       options,
-      isProd: true,
       pathPrefix
     })
+
+    webpackConfig = merge(gridsomeWebpackConfig, webpackConfig)
 
     webpack(webpackConfig).run((err, stats) => { if(options.debug) console.log(stats.toString())})
   })
@@ -141,7 +152,9 @@ module.exports = function (api, options) {
    */
   api.configureServer((app) => {
 
-    const webpackConfig = createWebpackConfig({ context, options, pathPrefix: '' })
+    let webpackConfig = createWebpackConfig({ context, options, pathPrefix: '' })
+
+    webpackConfig = merge(gridsomeWebpackConfig, webpackConfig)
 
     const compiler = webpack(webpackConfig)
 
@@ -163,6 +176,7 @@ module.exports.defaultOptions = () => ({
   htmlPath: `${__dirname}/templates/index.html`,
   publicPath: '/admin',
   injectScript: true,
+  shareWebpackRules: true,
   enableIdentityWidget: true,
   debug: false
 })
