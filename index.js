@@ -115,14 +115,16 @@ function createWebpackConfig({context, outDir, options, pathPrefix}) {
 }
 
 function mergeRules (gridsomeConfig, config) {
-  return merge({
-    resolve: gridsomeConfig.resolve,
-    resolveLoader: gridsomeConfig.resolveLoader,
+  const copy = merge({
+    // resolve: gridsomeConfig.resolve,
+    // resolveLoader: gridsomeConfig.resolveLoader,
     mode: gridsomeConfig.mode,
     node: gridsomeConfig.node,
     devtool: gridsomeConfig.devtool,
     module: gridsomeConfig.module,
+    // output: gridsomeConfig.output
   }, config)
+  return copy
 }
 
 module.exports = function (api, options) {
@@ -144,6 +146,8 @@ module.exports = function (api, options) {
   api.afterBuild(({config}) => {
     const { outDir } = config
 
+    console.log(outDir)
+
     let webpackConfig = createWebpackConfig({
       outDir,
       context,
@@ -153,7 +157,11 @@ module.exports = function (api, options) {
 
     webpackConfig = mergeRules(gridsomeWebpackConfig, webpackConfig)
 
-    webpack(webpackConfig).run((err, stats) => { if(options.debug) console.log(stats.toString())})
+    webpack(webpackConfig).run((err, stats) => { 
+      if(options.debug) {
+        console.log(stats.toString())
+      }
+    })
   })
 
   /**
